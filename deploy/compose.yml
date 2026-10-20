@@ -1,0 +1,61 @@
+name: grainettable
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: grainettable
+      POSTGRES_USER: grainettable
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?required}
+    volumes: [database:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U grainettable -d grainettable']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [private]
+  backend:
+    image: grainettable-backend:${BACKEND_TAG:?required}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/grainettable
+      DATABASE_USER: grainettable
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?required}
+      PUBLIC_ORIGIN: https://grainesetable.duckdns.org
+      WHATSAPP_NUMBER: '221772506666'
+      UPLOADS_PATH: /data/uploads
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      private:
+        aliases: [grainettable-backend]
+    mem_limit: 768m
+  frontend:
+    image: grainettable-frontend:${FRONTEND_TAG:?required}
+    depends_on: [backend]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      private: {}
+      proxy:
+        aliases: [grainettable-frontend]
+    mem_limit: 192m
+volumes:
+  database: {}
+  uploads: {}
+networks:
+  private: {}
+  proxy:
+    external: true
+    name: samakeur_default

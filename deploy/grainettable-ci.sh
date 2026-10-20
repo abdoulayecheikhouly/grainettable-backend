@@ -21,7 +21,7 @@ if ! docker compose up -d --no-deps "$service"; then
   exit 1
 fi
 for attempt in $(seq 1 45); do
-  if docker compose exec -T frontend wget -q -O /dev/null http://localhost:8080/api/health; then
+  if docker compose exec -T frontend wget -q -O /dev/null http://127.0.0.1:8080/api/health; then
     echo "Deployment healthy: $service $sha"
     exit 0
   fi

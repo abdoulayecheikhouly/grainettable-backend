@@ -13,7 +13,7 @@ public class RequestProtection extends OncePerRequestFilter {
  final ConcurrentHashMap<String,Window> attempts=new ConcurrentHashMap<>();
  @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain)throws ServletException,IOException {
   if(req.getRequestURI().startsWith("/api/")&&!java.util.Set.of("GET","HEAD","OPTIONS").contains(req.getMethod())&&!origin.equals(req.getHeader("Origin"))){res.setStatus(403);res.setContentType("application/json");res.getWriter().write("{\"error\":\"Origine refusée\"}");return;}
-  if(req.getRequestURI().matches("/api/auth/(login|register)")&&req.getMethod().equals("POST")){long now=System.currentTimeMillis();attempts.entrySet().removeIf(e->now-e.getValue().start()>900000);var window=attempts.compute(req.getRemoteAddr(),(k,w)->w==null||now-w.start()>900000?new Window(now,1):new Window(w.start(),w.count()+1));if(window.count()>20){res.setStatus(429);res.setContentType("application/json");res.getWriter().write("{\"error\":\"Trop de tentatives, réessayez plus tard\"}");return;}}
+  if(req.getRequestURI().matches("/api/auth/(login|register)|/api/guest/orders")&&req.getMethod().equals("POST")){long now=System.currentTimeMillis();attempts.entrySet().removeIf(e->now-e.getValue().start()>900000);var window=attempts.compute((req.getRequestURI().equals("/api/guest/orders")?"order:":"auth:")+req.getRemoteAddr(),(k,w)->w==null||now-w.start()>900000?new Window(now,1):new Window(w.start(),w.count()+1));if(window.count()>20){res.setStatus(429);res.setContentType("application/json");res.getWriter().write("{\"error\":\"Trop de tentatives, réessayez plus tard\"}");return;}}
   chain.doFilter(req,res);
  }
 }

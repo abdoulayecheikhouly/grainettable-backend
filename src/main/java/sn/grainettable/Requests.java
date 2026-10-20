@@ -13,4 +13,5 @@ public final class Requests {
  public record Cart(@NotEmpty @Size(max=50) List<@Valid Item> items) {}
  public record Order(@NotEmpty @Size(max=50) List<@Valid Item> items,@NotBlank @Size(max=100) String customerName,@NotBlank @Pattern(regexp="^\\+?[0-9 ()-]{8,24}$") String phone,@Size(max=1000) String note,@NotNull @Min(0) Long expectedTotal) {}
  public record Status(@NotBlank @Pattern(regexp="awaiting_confirmation|confirmed|cancelled") String status) {}
+ public record Stock(@NotNull @Min(0) @Max(1000000) Integer stock,@Size(max=200) String reason) {}
 }

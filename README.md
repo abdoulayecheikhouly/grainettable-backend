@@ -33,3 +33,7 @@ Le workflow vérifie chaque PR et chaque push main. Le job deploy reste désacti
 Le script de déploiement vérifie que le commit appartient à main, sérialise les mises en ligne, vérifie la santé et restaure le tag précédent en cas d’échec. Les migrations doivent rester rétrocompatibles pour un retour de version ; ne pas supprimer de colonnes dans une migration de déploiement automatique.
 
 `deploy/backup.sh` sauvegarde PostgreSQL et les photos. Définir une rétention et une copie hors VPS. Les fichiers .env et les sauvegardes restent privés. Aucun paiement en ligne n’est activé : le champ payment_status est prévu pour une future intégration, sans clé ni prestataire présélectionné.
+
+## Gestion boutique et commandes invitées
+
+Migration V2 : POST /api/guest/orders permet une commande avec coordonnées, CSRF et idempotence, sans créer de compte. GET /api/settings expose les informations publiques. /api/admin/settings, /api/admin/analytics et /api/admin/stock restent réservés aux administrateurs. Les ventes sont calculées sur confirmed_at et les commandes actuellement confirmées ; annuler une commande rétablit son stock. Réglages des contacts/WhatsApp, liens sociaux HTTPS et coordonnées GPS validés côté serveur.

@@ -58,4 +58,30 @@ class ShopIntegrationTest {
   mvc.perform(get("/api/admin/analytics").param("period","week").param("week","2020-W01").with(user("admin").roles("ADMIN"))).andExpect(status().isOk()).andExpect(jsonPath("$.from").value("2019-12-30")).andExpect(jsonPath("$.to").value("2020-01-05"));
   mvc.perform(get("/api/admin/analytics").param("period","week").param("week","2021-W53").with(user("admin").roles("ADMIN"))).andExpect(status().isBadRequest());
  }
+
+ @Test void productGalleryPersistsOrderedPhotosAndValidatesInput()throws Exception{
+  long category=db.queryForObject("SELECT id FROM category ORDER BY id LIMIT 1",Long.class);
+  var body=new HashMap<String,Object>(Map.of("name","Galerie","sku","GALLERY","category_id",category,"price",1000,"stock",5,"status","published","image","/assets/table.jpeg","images",List.of("/assets/table.jpeg","/assets/cafe.jpeg")));
+  var response=mvc.perform(post("/api/admin/products").with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isCreated()).andExpect(jsonPath("$.images[0]").value("/assets/table.jpeg")).andExpect(jsonPath("$.images[1]").value("/assets/cafe.jpeg")).andReturn();
+  long id=json.readTree(response.getResponse().getContentAsString()).get("id").asLong();
+  mvc.perform(get("/api/products/"+id)).andExpect(jsonPath("$.images.length()").value(2)).andExpect(jsonPath("$.rating_count").value(0));
+  body.put("image","/assets/cafe.jpeg");body.put("images",List.of("/assets/cafe.jpeg"));
+  mvc.perform(put("/api/admin/products/"+id).with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isOk()).andExpect(jsonPath("$.images.length()").value(1)).andExpect(jsonPath("$.image").value("/assets/cafe.jpeg"));
+  body.put("images",List.of("https://attacker.invalid/photo.jpg"));
+  mvc.perform(put("/api/admin/products/"+id).with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isBadRequest());
+  body.put("images",List.of("/api/media/00000000-0000-0000-0000-000000000000.jpg"));
+  mvc.perform(put("/api/admin/products/"+id).with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isBadRequest());
+ }
+ @Test void guestRatingsUpdateOneVotePerBrowserAndRemainProtected()throws Exception{
+  long id=product("RATING",500,5);
+  var first=mvc.perform(post("/api/products/"+id+"/ratings").with(csrf()).header("Origin",origin).contentType("application/json").content("{\"score\":5}")).andExpect(status().isOk()).andExpect(jsonPath("$.rating_count").value(1)).andExpect(jsonPath("$.rating_average").value(5)).andReturn();
+  String cookie=first.getResponse().getHeader("Set-Cookie").split(";",2)[0].split("=",2)[1];
+  mvc.perform(post("/api/products/"+id+"/ratings").cookie(new jakarta.servlet.http.Cookie("gt_rating",cookie)).with(csrf()).header("Origin",origin).contentType("application/json").content("{\"score\":3}")).andExpect(status().isOk()).andExpect(jsonPath("$.rating_count").value(1)).andExpect(jsonPath("$.rating_average").value(3));
+  mvc.perform(post("/api/products/"+id+"/ratings").with(csrf()).header("Origin",origin).contentType("application/json").content("{\"score\":5}")).andExpect(status().isOk()).andExpect(jsonPath("$.rating_count").value(2)).andExpect(jsonPath("$.rating_average").value(4));
+  mvc.perform(get("/api/products").param("q","RATING")).andExpect(jsonPath("$.items[0].rating_count").value(2));
+  mvc.perform(post("/api/products/"+id+"/ratings").with(csrf()).header("Origin",origin).contentType("application/json").content("{\"score\":6}")).andExpect(status().isBadRequest());
+  mvc.perform(post("/api/products/"+id+"/ratings").header("Origin",origin).contentType("application/json").content("{\"score\":5}")).andExpect(status().isForbidden());
+  db.update("UPDATE product SET status='draft' WHERE id=?",id);
+  mvc.perform(post("/api/products/"+id+"/ratings").with(csrf()).header("Origin",origin).contentType("application/json").content("{\"score\":5}")).andExpect(status().isNotFound());
+ }
 }

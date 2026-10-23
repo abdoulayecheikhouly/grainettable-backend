@@ -21,7 +21,7 @@ services:
       DATABASE_URL: jdbc:postgresql://db:5432/grainettable
       DATABASE_USER: grainettable
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:?required}
-      PUBLIC_ORIGIN: https://grainesetable.duckdns.org
+      PUBLIC_ORIGIN: https://grainettable.com
       WHATSAPP_NUMBER: '221772506666'
       UPLOADS_PATH: /data/uploads
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}

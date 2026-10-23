@@ -1,0 +1,9 @@
+# Include these site blocks in the shared proxy configuration, preserving other sites.
+grainettable.com {
+    encode gzip zstd
+    reverse_proxy grainettable-frontend:8080
+}
+
+www.grainettable.com, grainesetable.duckdns.org {
+    redir https://grainettable.com{uri} permanent
+}

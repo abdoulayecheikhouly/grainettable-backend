@@ -16,7 +16,8 @@ public class CatalogController {
  @PutMapping("/admin/categories/{id}") Object editCategory(@PathVariable long id,@Valid @RequestBody Requests.Category p){return service.saveCategory(id,p);}
  @DeleteMapping("/admin/categories/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void deleteCategory(@PathVariable long id){service.deleteCategory(id);}
  @GetMapping("/admin/products") Object adminProducts(@RequestParam(defaultValue="") String q,@RequestParam(required=false) Long category,@RequestParam(defaultValue="") String status,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="6") int limit){return service.products(q,category,null,null,false,"selection",page,limit,true,status);}
+ @GetMapping("/admin/products/{id}") Object adminProduct(@PathVariable long id){return service.adminProduct(id);}
  @PostMapping("/admin/products") @ResponseStatus(HttpStatus.CREATED) Object createProduct(@Valid @RequestBody Requests.Product p){return service.saveProduct(null,p);}
  @PutMapping("/admin/products/{id}") Object editProduct(@PathVariable long id,@Valid @RequestBody Requests.Product p){return service.saveProduct(id,p);}
- @DeleteMapping("/admin/products/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void deleteProduct(@PathVariable long id){service.archive(id);}
+ @DeleteMapping("/admin/products/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void deleteProduct(@PathVariable long id,@RequestParam @jakarta.validation.constraints.Min(0) long version){service.archive(id,version);}
 }

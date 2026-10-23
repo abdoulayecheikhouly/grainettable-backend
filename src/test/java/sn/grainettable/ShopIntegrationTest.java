@@ -50,7 +50,7 @@ class ShopIntegrationTest {
   mvc.perform(get("/api/admin/analytics").with(user("admin").roles("ADMIN"))).andExpect(status().isOk()).andExpect(jsonPath("$.summary.orders").value(12)).andExpect(jsonPath("$.units_sold").value(78)).andExpect(jsonPath("$.top_products.length()").value(10)).andExpect(jsonPath("$.top_products[0].quantity").value(12));
   orders.status(last,"cancelled");mvc.perform(get("/api/admin/analytics").param("period","week").with(user("admin").roles("ADMIN"))).andExpect(jsonPath("$.units_sold").value(66));Assertions.assertEquals(13,db.queryForObject("SELECT COUNT(*) FROM stock_movement",Integer.class));
   mvc.perform(get("/api/admin/analytics").param("period","range").param("from","2020-02-02").param("to","2020-01-01").with(user("admin").roles("ADMIN"))).andExpect(status().isBadRequest());
-  long id=product("ADJUST",100,3);mvc.perform(patch("/api/admin/products/"+id+"/stock").with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content("{\"stock\":7,\"reason\":\"Réception fournisseur\"}")).andExpect(status().isOk());mvc.perform(get("/api/admin/stock/movements").param("productId",String.valueOf(id)).with(user("admin").roles("ADMIN"))).andExpect(jsonPath("$[0].previous_stock").value(3)).andExpect(jsonPath("$[0].new_stock").value(7));
+  long id=product("ADJUST",100,3);mvc.perform(patch("/api/admin/products/"+id+"/stock").with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content("{\"stock\":7,\"version\":0,\"reason\":\"Réception fournisseur\"}")).andExpect(status().isOk());mvc.perform(get("/api/admin/stock/movements").param("productId",String.valueOf(id)).with(user("admin").roles("ADMIN"))).andExpect(jsonPath("$[0].previous_stock").value(3)).andExpect(jsonPath("$[0].new_stock").value(7));
  }
 
  @Test void historicalMonthsAndIsoWeeksAreSelectable()throws Exception{
@@ -65,7 +65,7 @@ class ShopIntegrationTest {
   var response=mvc.perform(post("/api/admin/products").with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isCreated()).andExpect(jsonPath("$.images[0]").value("/assets/table.jpeg")).andExpect(jsonPath("$.images[1]").value("/assets/cafe.jpeg")).andReturn();
   long id=json.readTree(response.getResponse().getContentAsString()).get("id").asLong();
   mvc.perform(get("/api/products/"+id)).andExpect(jsonPath("$.images.length()").value(2)).andExpect(jsonPath("$.rating_count").value(0));
-  body.put("image","/assets/cafe.jpeg");body.put("images",List.of("/assets/cafe.jpeg"));
+  body.put("version",0);body.put("image","/assets/cafe.jpeg");body.put("images",List.of("/assets/cafe.jpeg"));
   mvc.perform(put("/api/admin/products/"+id).with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isOk()).andExpect(jsonPath("$.images.length()").value(1)).andExpect(jsonPath("$.image").value("/assets/cafe.jpeg"));
   body.put("images",List.of("https://attacker.invalid/photo.jpg"));
   mvc.perform(put("/api/admin/products/"+id).with(user("admin").roles("ADMIN")).with(csrf()).header("Origin",origin).contentType("application/json").content(json.writeValueAsString(body))).andExpect(status().isBadRequest());
